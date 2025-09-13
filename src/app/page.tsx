@@ -1,74 +1,100 @@
 "use client";
-import { useState } from "react";
 
-type Message = {
-  from: "user" | "bot";
-  text: string;
-};
+import { useState, useEffect, useRef } from "react";
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([
-    { from: "bot", text: "Hi! I'm your fitness buddy 💪. Ask me anything about workouts, diet, or motivation!" }
+  const [messages, setMessages] = useState<{ sender: string; text: string }[]>([
+    { sender: "ai", text: "Welcome to Fitness AI! 💪 Ask me anything about workouts, diet, or motivation." },
   ]);
   const [input, setInput] = useState("");
+  const [isHovered, setIsHovered] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const responses: Record<string, string> = {
-    hello: "Hey! Ready to smash your fitness goals today?",
-    workout: "Try 20 pushups, 15 squats, and a 1-minute plank for a quick routine!",
-    diet: "Focus on protein-rich foods 🍗🥚 and whole carbs like oats & rice for energy.",
-    motivation: "Remember: small progress every day leads to big results! Keep going 🚀",
-    default: "I’m not sure about that, but stay consistent and you’ll see results!"
+  const dummyReplies: Record<string, string> = {
+    hello: "Hey champ! Ready to crush your fitness goals today? 🔥",
+    workout: "Try push-ups, squats, and planks for a killer bodyweight workout!",
+    diet: "Stick to high protein, complex carbs, and healthy fats. Fuel your gains! 🥗",
+    motivation: "Remember why you started. Small progress is still progress. 🚀",
+    default: "I'm here to help with fitness, diet, or motivation tips. Ask away!",
   };
 
   const handleSend = () => {
     if (!input.trim()) return;
-    const userMessage: Message = { from: "user", text: input };
-    const lower = input.toLowerCase();
-    let reply = responses.default;
 
-    if (lower.includes("hello") || lower.includes("hi")) reply = responses.hello;
-    else if (lower.includes("workout")) reply = responses.workout;
-    else if (lower.includes("diet")) reply = responses.diet;
-    else if (lower.includes("motivation")) reply = responses.motivation;
+    const userMessage = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
 
-    const botMessage: Message = { from: "bot", text: reply };
-    setMessages([...messages, userMessage, botMessage]);
+    setTimeout(() => {
+      const lowerInput = input.toLowerCase();
+      const reply =
+        dummyReplies[lowerInput as keyof typeof dummyReplies] ||
+        dummyReplies.default;
+
+      setMessages((prev) => [...prev, { sender: "ai", text: reply }]);
+    }, 600);
+
     setInput("");
   };
 
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <h1 className="text-2xl font-bold mb-4">🏋️ Fitness AI Buddy</h1>
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-4 flex flex-col">
-        <div className="flex-1 overflow-y-auto mb-4 space-y-2">
-          {messages.map((msg, i) => (
+    <main className="flex h-screen items-center justify-center relative">
+      {/* Background Image */}
+      <div
+  className="absolute inset-0 bg-cover bg-center transition-all duration-500 ease-in-out"
+  style={{ backgroundImage: "url('/gym-upscaled.png')" }}
+></div>
+
+
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/40"></div>
+
+      {/* Chatbox */}
+      <div
+        className="relative z-10 w-full max-w-lg p-6 rounded-2xl shadow-2xl border border-white/20 backdrop-blur-lg bg-white/10 text-white flex flex-col"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <h1 className="text-2xl font-bold mb-4 text-center">🏋️ Fitness AI</h1>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-2">
+          {messages.map((msg, idx) => (
             <div
-              key={i}
-              className={`p-2 rounded-xl max-w-[80%] ${
-                msg.from === "user"
-                  ? "bg-blue-500 text-white self-end ml-auto"
-                  : "bg-gray-200 text-black self-start"
+              key={idx}
+              className={`p-3 rounded-xl max-w-[80%] ${
+                msg.sender === "user"
+                  ? "ml-auto bg-blue-500/80"
+                  : "mr-auto bg-gray-800/70"
               }`}
             >
               {msg.text}
             </div>
           ))}
+          <div ref={chatEndRef} />
         </div>
-        <div className="flex gap-2">
+
+        {/* Input */}
+        <div className="flex items-center gap-2">
           <input
-            className="flex-1 border rounded-xl p-2"
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask me about workouts, diet..."
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Type your question..."
+            className="flex-1 p-2 rounded-lg bg-white/20 text-white placeholder-gray-300 outline-none text-sm"
           />
           <button
             onClick={handleSend}
-            className="bg-blue-500 text-white px-4 rounded-xl"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm"
           >
             Send
           </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
